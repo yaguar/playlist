@@ -1,0 +1,49 @@
+version: '3.0'
+
+services:
+  postgres_playlist:
+    container_name: postgres_playlist
+    image: "postgres:12.3"
+    environment:
+      POSTGRES_USER: "django"
+      POSTGRES_PASSWORD: "passw"
+      POSTGRES_DB: "playlist"
+    ports:
+      - "5432:5432"
+
+  redis_playlist:
+    container_name: redis_playlist
+    image: "redis:5"
+    ports:
+      - "6379:6379"
+
+  hub:
+    image: selenium/hub:3.141.59-20200525
+    ports:
+      - "4444:4444"
+
+  firefox:
+    container_name: firefox-selenium
+    image: selenium/node-firefox:3.141.59-20200525
+    volumes:
+      - /dev/shm:/dev/shm
+    environment:
+      HUB_HOST: hub
+      HUB_PORT: 4444
+    entrypoint: bash -c 'SE_OPTS="-host $$HOSTNAME" /opt/bin/entry_point.sh'
+
+  docs:
+    image: playlist_local_docs
+    container_name: docs
+    build:
+      context: .
+      dockerfile: ./compose/local/docs/Dockerfile
+    env_file:
+      - ./.envs/.local/.django
+    volumes:
+      - ./docs:/docs:z
+      - ./config:/app/config:z
+      - ./playlist:/app/playlist:z
+    ports:
+      - "7000:7000"
+    command: /start-docs
